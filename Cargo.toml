@@ -1,0 +1,10 @@
+[package]
+edition = "2018"
+name = "rust-web-crawler-practice"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+eyre = "0.6"
+reqwest = {version = "0.10.8", features = ["blocking"]}
