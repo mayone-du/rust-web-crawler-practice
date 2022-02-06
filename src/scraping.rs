@@ -1,21 +1,18 @@
-use scraper;
-
-#[derive(Debug)]
 pub struct MetaFields {
-  title: String,
-  description: String,
-  image: String,
+  pub title: String,
+  pub description: String,
+  pub image: String,
 }
 
-#[tokio::main]
 pub async fn fetch_meta_fields(url: String) -> Result<MetaFields, ()> {
-  // let body = reqwest::get(&url).await.unwrap().text().await.unwrap();
-  let body = reqwest::blocking::get(&url).unwrap().text().unwrap();
-  // println!("{:?}", body);
+  let body = reqwest::get(&url).await.unwrap().text().await.unwrap();
 
   let fragment = scraper::Html::parse_fragment(&body);
 
-  let (og_title_selector, og_description_selector, og_image_selector) = get_meta_selectors();
+  let (og_title_selector, og_description_selector, og_image_selector) = get_og_selectors();
+  let meta_title_selector = scraper::Selector::parse("title").unwrap();
+  let meta_description_selector =
+    scraper::Selector::parse(r#"meta[property="description"]"#).unwrap();
 
   let mut meta_fields = MetaFields {
     title: "".to_string(),
@@ -23,45 +20,49 @@ pub async fn fetch_meta_fields(url: String) -> Result<MetaFields, ()> {
     image: "".to_string(),
   };
 
-  let title_selector = scraper::Selector::parse(r#"title"#).unwrap();
-  let og_title_selector = scraper::Selector::parse(r#"meta[property="og:title"]"#).unwrap();
-
-  // let og_title_text = fragment
-  //   .select(&og_title_selector);
-  // println!("og:title {:?}", og_title_text);
-
-  for element in fragment.select(&title_selector) {
-    println!("title: {}", element.text().collect::<String>());
-    // println!("{}", element.text().collect::<String>());
-    // meta_fields.title = element.value().attr("content").expect("expect").to_string();
-  }
-
-  let mut result_str = "".to_string();
+  // title
   for element in fragment.select(&og_title_selector) {
-    // meta_fields.title = element.text().collect::<Vec<_>>().join("");
-    meta_fields.title = element.value().attr("content").expect("expect").to_string();
-    result_str += &element.text().collect::<Vec<_>>().join("");
-    result_str += "\n";
+    meta_fields.title = match element.value().attr("content") {
+      Some(content) => content.to_string(),
+      None => {
+        let mut title = "".to_string();
+        for title_tag in fragment.select(&meta_title_selector) {
+          title += title_tag.text().collect::<Vec<_>>().join(" ").as_str();
+        }
+        title
+      }
+    };
   }
+  // description
   for element in fragment.select(&og_description_selector) {
-    meta_fields.description = element.text().collect::<Vec<_>>().join("");
-    result_str += &element.text().collect::<Vec<_>>().join("");
-    result_str += "\n";
+    meta_fields.description = match element.value().attr("content") {
+      Some(content) => content.to_string(),
+      None => {
+        let mut description = "".to_string();
+        for description_tag in fragment.select(&meta_description_selector) {
+          description += description_tag
+            .value()
+            .attr("content")
+            .unwrap()
+            .to_string()
+            .as_str();
+        }
+        description
+      }
+    };
   }
+  // image
   for element in fragment.select(&og_image_selector) {
-    meta_fields.image = element.text().collect::<Vec<_>>().join("");
-    result_str += &element.text().collect::<Vec<_>>().join("");
-    result_str += "\n";
-    println!("og:image {:?}", element.text().collect::<Vec<_>>().join(""));
+    meta_fields.image = match element.value().attr("content") {
+      Some(content) => content.to_string(),
+      None => "".to_string(),
+    };
   }
-
-  println!("meta title: {}", meta_fields.title);
 
   Ok(meta_fields)
-  // Ok(result_str)
 }
 
-fn get_meta_selectors() -> (scraper::Selector, scraper::Selector, scraper::Selector) {
+fn get_og_selectors() -> (scraper::Selector, scraper::Selector, scraper::Selector) {
   let (title, description, image) = ("title", "description", "image");
   // let selector_temp = r#"meta[property="og:{}"]"#;
   (
@@ -70,42 +71,3 @@ fn get_meta_selectors() -> (scraper::Selector, scraper::Selector, scraper::Selec
     scraper::Selector::parse(&format!(r#"meta[property="og:{}"]"#, image)).unwrap(),
   )
 }
-
-// use scraper;
-
-// #[tokio::main]
-// pub async fn fetch_meta_fields(url: String) -> Result<String, ()> {
-//   let body = reqwest::get(&url).await.unwrap().text().await.unwrap();
-
-//   let fragment = scraper::Html::parse_fragment(&body);
-
-//   // let (og_title_selector, og_description_selector, og_image_selector) = get_meta_selectors();
-
-//   let mut result_str = "".to_string();
-//   // for element in fragment.select(&og_title_selector) {
-//   //   result_str += &element.text().collect::<Vec<_>>().join("");
-//   //   result_str += "\n";
-//   // }
-//   // for element in fragment.select(&og_description_selector) {
-//   //   result_str += &element.text().collect::<Vec<_>>().join("");
-//   //   result_str += "\n";
-//   // }
-//   // for element in fragment.select(&og_image_selector) {
-//   //   result_str += &element.text().collect::<Vec<_>>().join("");
-//   //   result_str += "\n";
-//   // }
-
-//   println!("{:?}", fragment);
-//   println!("{}", result_str);
-//   Ok(result_str)
-// }
-
-// fn get_meta_selectors() -> (scraper::Selector, scraper::Selector, scraper::Selector) {
-//   let (title, description, image) = ("title", "description", "image");
-//   // let selector_temp = r#"meta[property="{}"]"#;
-//   (
-//     scraper::Selector::parse(&format!(r#"meta[property="{}"]"#, title)).unwrap(),
-//     scraper::Selector::parse(&format!(r#"meta[property="{}"]"#, description)).unwrap(),
-//     scraper::Selector::parse(&format!(r#"meta[property="{}"]"#, image)).unwrap(),
-//   )
-// }
