@@ -1,22 +1,36 @@
-use select::document::Document;
-use select::predicate::Name;
-use std::env;
+use scraper;
+use std::thread;
+use tokio;
 
-fn main() -> eyre::Result<()> {
-    let args: Vec<String> = env::args().collect();
+mod scraping;
 
-    let url = if args.len() > 1 {
-        &args[1]
-    } else {
-        "https://www.rust-lang.org/en-US/downloads.html"
-    };
+#[tokio::main]
+async fn main() -> Result<(), ()> {
+    // let result = scraping::fetch_meta_fields("https://zenn.dev/mayo_dev".to_string()).await;
+    // tokio::task::spawn_blocking(|| {
+    //     scraping::fetch_meta_fields("https://zenn.dev/mayo_dev".to_string());
+    // })
+    // .await
+    // .expect("Task panicked");
 
-    let body = reqwest::blocking::get(url)?.text()?;
+    thread::spawn(|| {
+        scraping::fetch_meta_fields("https://zenn.dev/mayo_dev".to_string());
+    })
+    .join()
+    .expect("Thread panicked");
 
-    let doc = Document::from(body.as_str());
-    for href in doc.find(Name("meta")).filter_map(|a| a.attr("content")) {
-        println!("{:?}", href);
-    }
-
+    // println!("{:?}", result);
     Ok(())
+}
+
+// selectは使わずscraperを使う
+async fn get_meta_tags(url: String) -> Result<String, ()> {
+    let body = reqwest::get(&url).await.unwrap().text().await.unwrap();
+    let document = scraper::Html::parse_document(&body);
+
+    let selector = scraper::Selector::parse("meta").unwrap();
+    let elements = document.select(&selector);
+    println!("{:?}", elements);
+
+    Ok(body)
 }
