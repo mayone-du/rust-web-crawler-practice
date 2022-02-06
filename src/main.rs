@@ -4,20 +4,20 @@ use tokio;
 
 mod scraping;
 
-#[tokio::main]
-async fn main() -> Result<(), ()> {
-    // let result = scraping::fetch_meta_fields("https://zenn.dev/mayo_dev".to_string()).await;
+// #[tokio::main]
+fn main() -> Result<(), ()> {
+    scraping::fetch_meta_fields("https://zenn.dev/mayo_dev".to_string());
     // tokio::task::spawn_blocking(|| {
     //     scraping::fetch_meta_fields("https://zenn.dev/mayo_dev".to_string());
     // })
     // .await
     // .expect("Task panicked");
 
-    thread::spawn(|| {
-        scraping::fetch_meta_fields("https://zenn.dev/mayo_dev".to_string());
-    })
-    .join()
-    .expect("Thread panicked");
+    // thread::spawn(|| {
+    //     scraping::fetch_meta_fields("https://zenn.dev/mayo_dev".to_string());
+    // })
+    // .join()
+    // .expect("Thread panicked");
 
     // println!("{:?}", result);
     Ok(())
