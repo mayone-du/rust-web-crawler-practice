@@ -1,12 +1,48 @@
 use scraper;
 use std::thread;
 use tokio;
+use reqwest;
 
 mod scraping;
 
 // #[tokio::main]
 fn main() -> Result<(), ()> {
-    scraping::fetch_meta_fields("https://zenn.dev/mayo_dev".to_string());
+    let body = reqwest::blocking::get("https://mayone-du.github.io/yew-blog/")
+        .unwrap()
+        .text()
+        .unwrap();
+    println!("{}", body);
+    
+    let fragment = scraper::Html::parse_fragment(&body);
+    let og_title_selector = scraper::Selector::parse(r#"meta[property="og:title"]"#).unwrap();
+    let meta_title_selector = scraper::Selector::parse("title").unwrap();
+
+    // let mut meta_title = String::new();
+    for element in fragment.select(&og_title_selector) {
+        let og_title = element.value().attr("content");
+        println!("og title is {:?}", og_title);
+        // {
+            // Some(content) => content.to_string(),
+            // None => {
+            //     let mut title = "".to_string();
+            //     for title_tag in fragment.select(&meta_title_selector) {
+            //         title += title_tag.text().collect::<Vec<_>>().join(" ").as_str();
+            //     }
+            //     println!("{}", title);
+            //     title
+            // }
+        // };
+    }
+    
+        let mut title = "".to_string();
+        for title_tag in fragment.select(&meta_title_selector) {
+            title += title_tag.text().collect::<Vec<_>>().join(" ").as_str();
+        }
+        println!("meta title is {}", title);
+
+            //     println!("{}", title);
+    // scraping::fetch_meta_fields("https://mayone-du.github.io/yew-blog/".to_string());
+    // scraping::fetch_meta_fields("https://zenn.dev/mayo_dev".to_string());
     // tokio::task::spawn_blocking(|| {
     //     scraping::fetch_meta_fields("https://zenn.dev/mayo_dev".to_string());
     // })

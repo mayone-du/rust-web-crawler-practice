@@ -6,6 +6,7 @@ pub struct MetaFields {
 
 pub async fn fetch_meta_fields(url: String) -> Result<MetaFields, ()> {
   let body = reqwest::get(&url).await.unwrap().text().await.unwrap();
+  println!("{}", body);
 
   let fragment = scraper::Html::parse_fragment(&body);
 
@@ -13,6 +14,7 @@ pub async fn fetch_meta_fields(url: String) -> Result<MetaFields, ()> {
   let meta_title_selector = scraper::Selector::parse("title").unwrap();
   let meta_description_selector =
     scraper::Selector::parse(r#"meta[property="description"]"#).unwrap();
+
 
   let mut meta_fields = MetaFields {
     title: "".to_string(),
