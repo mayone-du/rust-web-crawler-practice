@@ -7,15 +7,21 @@ mod scraping;
 
 // #[tokio::main]
 fn main() -> Result<(), ()> {
-    let body = reqwest::blocking::get("https://mayone-du.github.io/yew-blog/")
+    let body = reqwest::blocking::get("https://www.youtube.com/watch?v=v9V5aByfeCM")
         .unwrap()
         .text()
         .unwrap();
-    println!("{}", body);
+    // println!("{}", body);
     
     let fragment = scraper::Html::parse_fragment(&body);
     let og_title_selector = scraper::Selector::parse(r#"meta[property="og:title"]"#).unwrap();
+    let favicon_selector = scraper::Selector::parse(r#"link[rel="icon"]"#).unwrap();
     let meta_title_selector = scraper::Selector::parse("title").unwrap();
+
+    for element in fragment.select(&favicon_selector) {
+        let favicon_url = element.value().attr("href").unwrap();
+        println!("favicon url is {}", favicon_url);
+    }
 
     // let mut meta_title = String::new();
     for element in fragment.select(&og_title_selector) {
